@@ -133,6 +133,18 @@ export default function Home() {
         [aiName]: portfolio,
       };
     });
+
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        ai: aiName,
+        timestamp: Date.now(),
+        action: decision.action,
+        amount: decision.amount,
+        price: currentCandle.close,
+        message: decision.message,
+      },
+    ]);
   }
 
   function handlePlayPause() {
