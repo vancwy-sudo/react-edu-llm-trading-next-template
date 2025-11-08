@@ -7,41 +7,7 @@ import AIChatroom from "@/components/AIChatroom";
 import marketDataJson from "@/data/tsla.json";
 import { AI_MODELS, INITIAL_PORTFOLIO } from "@/lib/config";
 
-/**
- * Main Trading Simulation Page
- *
- * STUDENT TASK: Implement the trading simulation logic
- *
- * You will build:
- * - State management with useState
- * - Side effects with useEffect
- * - Simulation loop
- * - Trading logic
- * - Event handlers
- *
- * The UI components (TradingChart, StockInfo, AIChatroom) are provided.
- * Focus on learning React hooks and application logic!
- */
 export default function Home() {
-  // =============================================================================
-  // TODO 1: Set up state variables using useState
-  // =============================================================================
-  // Create the following state variables:
-  // 1. marketData - array to store candle data (initial: [])
-  // 2. currentIndex - number for current candle position (initial: 0)
-  // 3. isRunning - boolean for simulation state (initial: false)
-  // 4. speed - number in milliseconds per candle (initial: 30000)
-  // 5. aiPortfolios - object with modelA and modelB portfolios (initial: see below)
-  // 6. chatMessages - array for all chat messages (initial: [])
-  // 7. aiMessages - object to track messages per AI (initial: { modelA: [], modelB: [] })
-  //
-  // HINT: For aiPortfolios initial value:
-  // {
-  //   modelA: { ...INITIAL_PORTFOLIO },
-  //   modelB: { ...INITIAL_PORTFOLIO },
-  // }
-  //
-  // Your code here:
   const [marketData, setMarketData] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -56,40 +22,9 @@ export default function Home() {
     modelB: [],
   });
 
-  // =============================================================================
-  // TODO 2: Load market data when component mounts
-  // =============================================================================
-  // Use useEffect to load market data once when the component first renders.
-  //
-  // Steps:
-  // 1. Use useEffect with an empty dependency array []
-  // 2. Inside the effect, set marketData to marketDataJson
-  // 3. (Optional) Log how many candles were loaded
-  //
-  // HINT: Empty dependency [] means "run once on mount"
-  //
-  // Your code here:
   useEffect(() => {
     setMarketData(marketDataJson);
   }, []);
-
-  // =============================================================================
-  // TODO 3: Create the simulation loop
-  // =============================================================================
-  // Use useEffect to run the simulation at the specified speed.
-  //
-  // Steps:
-  // 1. Check if simulation should run (isRunning && marketData.length > 0)
-  // 2. Create an interval using setInterval that:
-  //    a. Checks if we reached the end (currentIndex >= marketData.length - 1)
-  //    b. If at end: stop simulation, call showFinalResults(), return
-  //    c. Otherwise: increment currentIndex and call makeAIDecisions(nextIndex)
-  // 3. Return a cleanup function that calls clearInterval
-  // 4. Add proper dependencies: [isRunning, currentIndex, speed, marketData]
-  //
-  // HINT: Use async/await for makeAIDecisions since it calls APIs
-  //
-  // Your code here:
 
   useEffect(() => {
     if (!isRunning || marketData.length === 0) {
@@ -102,7 +37,7 @@ export default function Home() {
         return;
       }
 
-      //Calculate next candle index
+      // Calculate next candle index
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
 
@@ -115,76 +50,33 @@ export default function Home() {
     };
   }, [isRunning, currentIndex, speed, marketData]);
 
-  // =============================================================================
-  // TODO 4: Implement makeAIDecisions function
-  // =============================================================================
-  // This function calls both AI models to make trading decisions for a candle.
-  //
-  // Parameters:
-  // - index: the current candle index
-  //
-  // Steps:
-  // 1. Get currentCandle from marketData[index]
-  // 2. Get previousCandles: marketData.slice(Math.max(0, index - 10), index)
-  // 3. Call getAIDecision for modelA with AI_MODELS.modelA.code
-  // 4. Call getAIDecision for modelB with AI_MODELS.modelB.code
-  // 5. (Optional) Log current candle info
-  //
-  // HINT: Use await for both getAIDecision calls
-  //
-  // Your code here:
   async function makeAIDecisions(index) {
     const currentCandle = marketData[index];
     const previousCandles = marketData.slice(Math.max(0, index - 10), index);
 
-    await getAIDecision(
-      "modelA",
-      AI_MODELS.modelA.code,
-      currentCandle,
-      previousCandles
-    );
-    await getAIDecision(
-      "modelB",
-      AI_MODELS.modelB.code,
-      currentCandle,
-      previousCandles
-    );
+    await Promise.all([
+      getAIDecision(
+        "modelA",
+        AI_MODELS.modelA.code,
+        currentCandle,
+        previousCandles
+      ),
+      getAIDecision(
+        "modelB",
+        AI_MODELS.modelB.code,
+        currentCandle,
+        previousCandles
+      ),
+    ]);
   }
 
-  // =============================================================================
-  // TODO 5: Implement getAIDecision function
-  // =============================================================================
-  // This function calls the AI API to get a trading decision.
-  //
-  // Parameters:
-  // - aiName: 'modelA' or 'modelB'
-  // - model: the model code string (e.g., 'anthropic/claude-3.5-sonnet')
-  // - currentCandle: the current candle object
-  // - previousCandles: array of previous 10 candles
-  //
-  // Steps:
-  // 1. Get the portfolio for this AI from aiPortfolios[aiName]
-  // 2. Calculate portfolioValue = portfolio.cash + (portfolio.shares * currentCandle.close)
-  // 3. Get previousMessages for this AI from aiMessages[aiName]
-  // 4. Call fetch to '/api/trade' with POST method:
-  //    - Headers: { 'Content-Type': 'application/json' }
-  //    - Body: JSON.stringify with model, currentCandle, previousCandles,
-  //            portfolio (cash, shares, value), and previousMessages (last 10)
-  // 5. Check if response is ok, parse JSON
-  // 6. Call executeTrade(aiName, decision, currentCandle)
-  // 7. Wrap in try-catch and log errors
-  //
-  // HINT: Remember to await fetch and response.json()
-  //
-  // Your code here:
   async function getAIDecision(aiName, model, currentCandle, previousCandles) {
-    /* */
     const portfolio = aiPortfolios[aiName];
     const portfolioValue =
       portfolio.cash + portfolio.shares * currentCandle.close;
-    const previousMessages = aiMessages[aiName].slice(-10);
+    const previousMessages = aiMessages[aiName].slice(-10); // Get last 10 messages from the AI bot
 
-    const response = await fetch(`/api/trade`, {
+    const response = await fetch("/api/trade", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -203,63 +95,38 @@ export default function Home() {
     });
 
     const decision = await response.json();
-    /**/
-    //TODO: execute the trade decision
-    executeTrade(aiName, "buy", currentCandle);
+
+    // TODO: execute the trade decision
+    executeTrade(aiName, decision, currentCandle);
   }
 
-  // =============================================================================
-  // TODO 6: Implement executeTrade function
-  // =============================================================================
-  // This function executes a trade and updates the portfolio.
-  //
-  // Parameters:
-  // - aiName: 'modelA' or 'modelB'
-  // - decision: { action: 'buy'|'sell'|'hold', amount: number, message: string }
-  // - currentCandle: the current candle object
-  //
-  // Steps:
-  // 1. Use setAiPortfolios to update the portfolio
-  // 2. Inside the updater function:
-  //    a. Copy the portfolio: { ...prev[aiName] }
-  //    b. Get action, amount, and price from decision and currentCandle
-  //    c. If action is 'buy':
-  //       - Calculate cost = amount * price
-  //       - Check if portfolio.cash >= cost
-  //       - If yes: deduct cash, add shares
-  //       - If no: set decision.action to 'hold' with error message
-  //    d. If action is 'sell':
-  //       - Check if portfolio.shares >= amount
-  //       - If yes: add cash, deduct shares
-  //       - If no: set decision.action to 'hold' with error message
-  //    e. Calculate new portfolio value
-  //    f. IMPORTANT: Create NEW history array (don't mutate):
-  //       portfolio.history = [...portfolio.history, { timestamp, value }]
-  //    g. Set portfolio.lastPrice = price
-  //    h. Return updated portfolios object
-  // 3. Create message object with ai, timestamp, action, amount, price, message
-  // 4. Add to chatMessages using setChatMessages
-  // 5. Add to aiMessages[aiName] using setAiMessages
-  //
-  // CRITICAL: Always create NEW arrays/objects. Never mutate state!
-  //
-  // Your code here:
   function executeTrade(aiName, decision, currentCandle) {
-    // Your implementation
     setAiPortfolios((prev) => {
       const portfolio = { ...prev[aiName] };
 
-      const randomPrice = Math.round(Math.random() * 100 + 200); //Random from 200 to 3000
-      portfolio.cash += randomPrice;
-      portfolio.shares += 1;
+      if (decision.action === "buy") {
+        const cost = decision.amount * currentCandle.close;
+
+        if (cost <= portfolio.cash) {
+          portfolio.cash -= cost;
+          portfolio.shares += decision.amount;
+        }
+      } else if (decision.action === "sell") {
+        if (decision.amount <= portfolio.shares) {
+          portfolio.cash += decision.amount * currentCandle.close;
+          portfolio.shares -= decision.amount;
+        }
+      }
+
       portfolio.history = [
         ...portfolio.history,
         {
           timestamp: new Date(),
-          value: randomPrice,
+          value: portfolio.cash + portfolio.shares * currentCandle.close,
         },
       ];
-      portfolio.lastPrice = randomPrice;
+
+      portfolio.lastPrice = currentCandle.close;
 
       return {
         ...prev,
@@ -268,27 +135,7 @@ export default function Home() {
     });
   }
 
-  // =============================================================================
-  // TODO 7: Implement event handler functions
-  // =============================================================================
-  // Implement these three event handlers:
-  //
-  // 1. handlePlayPause() - toggles isRunning between true/false
-  //    HINT: setIsRunning(prev => !prev)
-  //
-  // 2. handleSpeedChange(newSpeed) - updates speed to newSpeed
-  //    HINT: setSpeed(newSpeed)
-  //
-  // 3. handleReset() - resets all state to initial values:
-  //    - isRunning: false
-  //    - currentIndex: 0
-  //    - aiPortfolios: reset to INITIAL_PORTFOLIO for both models
-  //    - chatMessages: []
-  //    - aiMessages: { modelA: [], modelB: [] }
-  //
-  // Your code here:
   function handlePlayPause() {
-    // Your implementation
     setIsRunning(!isRunning);
   }
 
@@ -328,7 +175,7 @@ export default function Home() {
         action: "hold",
         amount: 0,
         price: finalPrice,
-        message: `🏆 Simulation Complete! ${winner} wins with $${winnerValue.toFixed(
+        message: `�� Simulation Complete! ${winner} wins with $${winnerValue.toFixed(
           2
         )}!`,
       },
